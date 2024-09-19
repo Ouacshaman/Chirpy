@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"fmt"
+	"encoding/json"
 )
 
 type apiConfig struct {
@@ -39,6 +40,55 @@ func main(){
 		w.WriteHeader(405)
 	})
 	mux.Handle("/api/reset", apiCfg.resetCounter())
+	mux.HandleFunc("POST /api/validate_chirp", func(w http.ResponseWriter, r *http.Request){
+		type params struct{
+			Body string `json:"body"`
+		}
+		type rtnErr struct{
+			Error string `json:"error"`
+		}
+		type valid struct{
+			Valid bool `json:"valid"`
+		}
+		decoder := json.NewDecoder(r.Body)
+		param := params{}
+		err := decoder.Decode(&param)
+		if err != nil{
+			decodeErr := rtnErr{
+				Error: "Something went wrong",
+			}
+			dat, err := json.Marshal(decodeErr)
+			if err != nil{
+				fmt.Println("It's Joever")
+				return
+			}
+			w.Write(dat)
+			return
+		}
+		if len(string(param.Body)) > 140 {
+			lenErr := rtnErr{
+				Error: "Chirp is too long",
+			}
+			dat, err := json.Marshal(lenErr)
+			if err != nil{
+				fmt.Println("It's Joever")
+				return
+			}
+			w.WriteHeader(400)
+			w.Write(dat)
+			return
+		}
+		val := valid{
+			Valid: true,
+		}
+		dat, err := json.Marshal(val)
+		if err != nil{
+			return
+		}
+		w.WriteHeader(200)
+		w.Write(dat)
+
+	})
 	err := http.ListenAndServe(s.Addr, s.Handler)
 	if err != nil{
 		fmt.Println("Ecounter Error during Server Initiation:", err)
