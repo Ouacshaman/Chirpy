@@ -31,11 +31,11 @@ func main(){
 	mux.HandleFunc("DELETE /api/healthz", func(w http.ResponseWriter, req *http.Request){
 		w.WriteHeader(405)
 	})
-	mux.Handle("GET /api/metrics", apiCfg.hitCounter())
-	mux.HandleFunc("POST /api/metrics", func(w http.ResponseWriter, req *http.Request){
+	mux.Handle("GET /admin/metrics", apiCfg.hitCounter())
+	mux.HandleFunc("POST /admin/metrics", func(w http.ResponseWriter, req *http.Request){
 		w.WriteHeader(405)
 	})
-	mux.HandleFunc("DELETE /api/metrics", func(w http.ResponseWriter, req *http.Request){
+	mux.HandleFunc("DELETE /admin/metrics", func(w http.ResponseWriter, req *http.Request){
 		w.WriteHeader(405)
 	})
 	mux.Handle("/api/reset", apiCfg.resetCounter())
@@ -55,9 +55,16 @@ func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
 
 func (cfg *apiConfig) hitCounter() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		resp := fmt.Sprintf("Hits: %d", cfg.fileserverHits)
-		w.Write([]byte(resp))
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		htmlTemplate := fmt.Sprintf(`<html>
+
+<body>
+    <h1>Welcome, Chirpy Admin</h1>
+    <p>Chirpy has been visited %d times!</p>
+</body>
+
+</html>`, cfg.fileserverHits)
+		w.Write([]byte(htmlTemplate))
 	})
 }
 
