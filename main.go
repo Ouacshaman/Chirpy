@@ -19,13 +19,25 @@ func main(){
 		Handler: mux,
 	}
 	mux.Handle("/app/", apiCfg.middlewareMetricsInc(http.StripPrefix("/app/",http.FileServer(http.Dir(".")))))
-	mux.HandleFunc("/healthz", func(w http.ResponseWriter, req *http.Request){
+	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, req *http.Request){
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(200)
 		w.Write([]byte("OK"))
 
 	})
-	mux.Handle("/metrics", apiCfg.hitCounter())
+	mux.HandleFunc("POST /healthz", func(w http.ResponseWriter, req *http.Request){
+		w.WriteHeader(405)
+	})
+	mux.HandleFunc("DELETE /healthz", func(w http.ResponseWriter, req *http.Request){
+		w.WriteHeader(405)
+	})
+	mux.Handle("GET /metrics", apiCfg.hitCounter())
+	mux.HandleFunc("POST /metrics", func(w http.ResponseWriter, req *http.Request){
+		w.WriteHeader(405)
+	})
+	mux.HandleFunc("DELETE /metrics", func(w http.ResponseWriter, req *http.Request){
+		w.WriteHeader(405)
+	})
 	mux.Handle("/reset", apiCfg.resetCounter())
 	err := http.ListenAndServe(s.Addr, s.Handler)
 	if err != nil{
