@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"fmt"
 	"encoding/json"
+	"strings"
 )
 
 type apiConfig struct {
@@ -44,9 +45,6 @@ func main(){
 		type params struct{
 			Body string `json:"body"`
 		}
-		type rtnErr struct{
-			Error string `json:"error"`
-		}
 		type valid struct{
 			Valid bool `json:"valid"`
 		}
@@ -54,40 +52,32 @@ func main(){
 		param := params{}
 		err := decoder.Decode(&param)
 		if err != nil{
-			decodeErr := rtnErr{
-				Error: "Something went wrong",
-			}
-			dat, err := json.Marshal(decodeErr)
-			if err != nil{
-				fmt.Println("It's Joever")
-				return
-			}
-			w.Write(dat)
+			msg :=  "Something went wrong"
+			respondWithError(w, 400, msg)
 			return
 		}
 		if len(string(param.Body)) > 140 {
-			lenErr := rtnErr{
-				Error: "Chirp is too long",
-			}
-			dat, err := json.Marshal(lenErr)
-			if err != nil{
-				fmt.Println("It's Joever")
-				return
-			}
-			w.WriteHeader(400)
-			w.Write(dat)
+			msg := "Chirp is too long"
+			respondWithError(w, 400, msg)
 			return
 		}
-		val := valid{
-			Valid: true,
+		stringList := strings.Split(string(param.Body)," ")
+		var resString []string
+		for _,v := range stringList{
+			if strings.Contains(strings.ToLower(v), "kerfuffle") || strings.Contains(strings.ToLower(v), "sharbert") || strings.Contains(strings.ToLower(v), "fornax"){
+				resString = append(resString, "****")
+			} else {
+				resString = append(resString, v)
+			}
 		}
-		dat, err := json.Marshal(val)
-		if err != nil{
-			return
+		result := strings.Join(resString, " ")
+		type cleanBody struct{
+			Cleaned_body string `json:"cleaned_body"`
 		}
-		w.WriteHeader(200)
-		w.Write(dat)
-
+		cleaned := cleanBody{
+			Cleaned_body: result,
+		}
+		respondWithJSON(w, 200, cleaned)
 	})
 	err := http.ListenAndServe(s.Addr, s.Handler)
 	if err != nil{
@@ -123,4 +113,29 @@ func (cfg *apiConfig) resetCounter() http.Handler {
 		cfg.fileserverHits = 0
 		w.WriteHeader(200)
 	})
+}
+
+func respondWithError(w http.ResponseWriter, code int, msg string) {
+	type rtnErr struct{
+		Error string `json:"error"`
+	}
+	decodeErr := rtnErr{
+		Error: msg,
+	}
+	dat, err := json.Marshal(decodeErr)
+	if err != nil{
+		fmt.Println(err)
+		return
+	}
+	w.WriteHeader(code)
+	w.Write(dat)
+}
+
+func respondWithJSON(w http.ResponseWriter, code int, payload interface{}){
+	dat, err := json.Marshal(payload)
+	if err != nil{
+		return
+	}
+	w.WriteHeader(code)
+	w.Write(dat)
 }
