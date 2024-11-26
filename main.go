@@ -1,58 +1,74 @@
 package main
 
 import (
-	"net/http"
-	"fmt"
+	"Chirpy/internal/database"
+	"database/sql"
 	"encoding/json"
+	"fmt"
+	"net/http"
+	"os"
 	"strings"
+
+	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 )
 
 type apiConfig struct {
 	fileserverHits int
+	db             *database.Queries
 }
 
-func main(){
+func main() {
+	godotenv.Load()
+	dbURL := os.Getenv("postgres://shihong:@localhost:5432/gator?sslmode=disable")
+	db, err := sql.Open("postgres", dbURL)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	dbQueries := database.New(db)
 	apiCfg := apiConfig{
 		fileserverHits: 0,
+		db:             dbQueries,
 	}
 	mux := http.NewServeMux()
 	s := &http.Server{
-		Addr: ":8080",
+		Addr:    ":8080",
 		Handler: mux,
 	}
-	mux.Handle("/app/", apiCfg.middlewareMetricsInc(http.StripPrefix("/app/",http.FileServer(http.Dir(".")))))
-	mux.HandleFunc("GET /api/healthz", func(w http.ResponseWriter, req *http.Request){
+	mux.Handle("/app/", apiCfg.middlewareMetricsInc(http.StripPrefix("/app/", http.FileServer(http.Dir(".")))))
+	mux.HandleFunc("GET /api/healthz", func(w http.ResponseWriter, req *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(200)
 		w.Write([]byte("OK"))
 
 	})
-	mux.HandleFunc("POST /api/healthz", func(w http.ResponseWriter, req *http.Request){
+	mux.HandleFunc("POST /api/healthz", func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(405)
 	})
-	mux.HandleFunc("DELETE /api/healthz", func(w http.ResponseWriter, req *http.Request){
+	mux.HandleFunc("DELETE /api/healthz", func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(405)
 	})
 	mux.Handle("GET /admin/metrics", apiCfg.hitCounter())
-	mux.HandleFunc("POST /admin/metrics", func(w http.ResponseWriter, req *http.Request){
+	mux.HandleFunc("POST /admin/metrics", func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(405)
 	})
-	mux.HandleFunc("DELETE /admin/metrics", func(w http.ResponseWriter, req *http.Request){
+	mux.HandleFunc("DELETE /admin/metrics", func(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(405)
 	})
 	mux.Handle("/api/reset", apiCfg.resetCounter())
-	mux.HandleFunc("POST /api/validate_chirp", func(w http.ResponseWriter, r *http.Request){
-		type params struct{
+	mux.HandleFunc("POST /api/validate_chirp", func(w http.ResponseWriter, r *http.Request) {
+		type params struct {
 			Body string `json:"body"`
 		}
-		type valid struct{
+		type valid struct {
 			Valid bool `json:"valid"`
 		}
 		decoder := json.NewDecoder(r.Body)
 		param := params{}
 		err := decoder.Decode(&param)
-		if err != nil{
-			msg :=  "Something went wrong"
+		if err != nil {
+			msg := "Something went wrong"
 			respondWithError(w, 400, msg)
 			return
 		}
@@ -61,17 +77,17 @@ func main(){
 			respondWithError(w, 400, msg)
 			return
 		}
-		stringList := strings.Split(string(param.Body)," ")
+		stringList := strings.Split(string(param.Body), " ")
 		var resString []string
-		for _,v := range stringList{
-			if strings.Contains(strings.ToLower(v), "kerfuffle") || strings.Contains(strings.ToLower(v), "sharbert") || strings.Contains(strings.ToLower(v), "fornax"){
+		for _, v := range stringList {
+			if strings.Contains(strings.ToLower(v), "kerfuffle") || strings.Contains(strings.ToLower(v), "sharbert") || strings.Contains(strings.ToLower(v), "fornax") {
 				resString = append(resString, "****")
 			} else {
 				resString = append(resString, v)
 			}
 		}
 		result := strings.Join(resString, " ")
-		type cleanBody struct{
+		type cleanBody struct {
 			Cleaned_body string `json:"cleaned_body"`
 		}
 		cleaned := cleanBody{
@@ -79,8 +95,8 @@ func main(){
 		}
 		respondWithJSON(w, 200, cleaned)
 	})
-	err := http.ListenAndServe(s.Addr, s.Handler)
-	if err != nil{
+	err = http.ListenAndServe(s.Addr, s.Handler)
+	if err != nil {
 		fmt.Println("Ecounter Error during Server Initiation:", err)
 		return
 	}
@@ -88,8 +104,8 @@ func main(){
 
 func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cfg.fileserverHits ++
-		next.ServeHTTP(w,r)
+		cfg.fileserverHits++
+		next.ServeHTTP(w, r)
 	})
 }
 
@@ -116,14 +132,14 @@ func (cfg *apiConfig) resetCounter() http.Handler {
 }
 
 func respondWithError(w http.ResponseWriter, code int, msg string) {
-	type rtnErr struct{
+	type rtnErr struct {
 		Error string `json:"error"`
 	}
 	decodeErr := rtnErr{
 		Error: msg,
 	}
 	dat, err := json.Marshal(decodeErr)
-	if err != nil{
+	if err != nil {
 		fmt.Println(err)
 		return
 	}
@@ -131,9 +147,9 @@ func respondWithError(w http.ResponseWriter, code int, msg string) {
 	w.Write(dat)
 }
 
-func respondWithJSON(w http.ResponseWriter, code int, payload interface{}){
+func respondWithJSON(w http.ResponseWriter, code int, payload interface{}) {
 	dat, err := json.Marshal(payload)
-	if err != nil{
+	if err != nil {
 		return
 	}
 	w.WriteHeader(code)
