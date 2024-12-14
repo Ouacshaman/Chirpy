@@ -20,7 +20,7 @@ type apiConfig struct {
 
 func main() {
 	godotenv.Load()
-	dbURL := os.Getenv("postgres://shihong:@localhost:5432/gator?sslmode=disable")
+	dbURL := os.Getenv("postgres://shihong:@localhost:5432/chirpy?sslmode=disable")
 	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		fmt.Println(err)
