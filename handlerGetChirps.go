@@ -11,6 +11,7 @@ func (cfg *apiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
 	chirps, err := cfg.db.GetChirps(r.Context())
 	if err != nil {
 		respondWithError(w, 400, "Unable To Get Chirps", err)
+		return
 	}
 	type chirp struct {
 		Id        uuid.UUID `json:"id"`
