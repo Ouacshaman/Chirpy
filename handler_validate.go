@@ -1,6 +1,7 @@
 package main
 
 import (
+	"Chirpy/internal/auth"
 	"Chirpy/internal/database"
 	"encoding/json"
 	"net/http"
@@ -50,6 +51,21 @@ func (cfg *apiConfig) handlerChirps(w http.ResponseWriter, r *http.Request) {
 	chirp, err := cfg.db.CreateChirp(r.Context(), chirpParams)
 	if err != nil {
 		respondWithError(w, 400, "Unable to Create Chirp", err)
+		return
+	}
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, 401, "Unauthorized", err)
+		return
+	}
+	valUUID, err := auth.ValidateJWT(token, cfg.secret)
+	if err != nil {
+		respondWithError(w, 401, "Unauthorized", err)
+		return
+	}
+	if valUUID != params.UserId {
+		respondWithError(w, 401, "Unauthorized", err)
+		return
 	}
 	respondWithJSON(w, 201, returnVals{
 		Id:        chirp.ID,
