@@ -14,9 +14,9 @@ func MakeJWT(userID uuid.UUID, tokenSecret string, expiresIn time.Duration) (str
 		ExpiresAt: jwt.NewNumericDate(now.Add(expiresIn)),
 		Subject:   userID.String()}
 	t := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	secret, err := t.SignedString([]byte(tokenSecret))
+	signedToken, err := t.SignedString([]byte(tokenSecret))
 	if err != nil {
 		return "", err
 	}
-	return secret, nil
+	return signedToken, nil
 }

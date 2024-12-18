@@ -4,6 +4,7 @@ import (
 	"Chirpy/internal/auth"
 	"Chirpy/internal/database"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -36,6 +37,7 @@ func (cfg *apiConfig) handlerUsers(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusBadRequest, "Unable to Create User", err)
 		return
 	}
+	fmt.Println("New User UUID:", user.ID)
 	type returnVals struct {
 		Id        uuid.UUID `json:"id"`
 		CreatedAt time.Time `json:"created_at"`

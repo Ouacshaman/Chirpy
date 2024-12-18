@@ -34,27 +34,27 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var token string
-	if params.ExpiresInSeconds != 0 &&
+	if params.ExpiresInSeconds == 0 ||
 		params.ExpiresInSeconds > 3600 {
-		stringSeconds := strconv.Itoa(params.ExpiresInSeconds) + "s"
-		secs, err := time.ParseDuration(stringSeconds)
+		hour, err := time.ParseDuration("1h")
 		if err != nil {
-			respondWithError(w, 404, "Can't Parse Time", err)
+			respondWithError(w, http.StatusBadRequest, "Can't Parse Time", err)
 			return
 		}
-		outcome, err := auth.MakeJWT(user.ID, cfg.secret, secs)
+		outcome, err := auth.MakeJWT(user.ID, cfg.secret, hour)
 		if err != nil {
 			respondWithError(w, 401, "Unauthorized", err)
 			return
 		}
 		token = outcome
 	} else {
-		hour, err := time.ParseDuration("1h")
+		stringSeconds := strconv.Itoa(params.ExpiresInSeconds) + "s"
+		secs, err := time.ParseDuration(stringSeconds)
 		if err != nil {
-			respondWithError(w, 404, "Can't Parse Time", err)
+			respondWithError(w, http.StatusBadRequest, "Can't Parse Time", err)
 			return
 		}
-		outcome, err := auth.MakeJWT(user.ID, cfg.secret, hour)
+		outcome, err := auth.MakeJWT(user.ID, cfg.secret, secs)
 		if err != nil {
 			respondWithError(w, 401, "Unauthorized", err)
 			return

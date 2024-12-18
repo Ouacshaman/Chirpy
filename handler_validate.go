@@ -23,7 +23,11 @@ func (cfg *apiConfig) handlerChirps(w http.ResponseWriter, r *http.Request) {
 		Body      string    `json:"body"`
 		UserId    uuid.UUID `json:"user_id"`
 	}
-
+	/*
+		UserId in the parameters struct starts as uuid.Nil,
+		intentionally so. This placeholder is then updated with the correct,
+		validated UserId extracted from the JWT.
+	*/
 	decoder := json.NewDecoder(r.Body)
 	params := parameters{}
 	err := decoder.Decode(&params)
@@ -31,7 +35,6 @@ func (cfg *apiConfig) handlerChirps(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusInternalServerError, "Couldn't decode parameters", err)
 		return
 	}
-
 	token, err := auth.GetBearerToken(r.Header)
 	if err != nil {
 		respondWithError(w, 401, "Unauthorized", err)
@@ -42,10 +45,7 @@ func (cfg *apiConfig) handlerChirps(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, 401, "Unauthorized", err)
 		return
 	}
-	if valUUID != params.UserId {
-		respondWithError(w, 401, "Unauthorized", err)
-		return
-	}
+	params.UserId = valUUID
 
 	const maxChirpLength = 140
 	if len(params.Body) > maxChirpLength {
