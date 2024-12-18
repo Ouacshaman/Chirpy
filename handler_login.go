@@ -34,7 +34,7 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var token string
-	if params.ExpiresInSeconds != 0 ||
+	if params.ExpiresInSeconds != 0 &&
 		params.ExpiresInSeconds > 3600 {
 		stringSeconds := strconv.Itoa(params.ExpiresInSeconds) + "s"
 		secs, err := time.ParseDuration(stringSeconds)

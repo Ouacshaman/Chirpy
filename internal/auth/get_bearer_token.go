@@ -12,7 +12,7 @@ func GetBearerToken(headers http.Header) (string, error) {
 		err := errors.New("Authorization not found in header")
 		return "", err
 	}
-	trimBearer := strings.TrimPrefix(auth, "Bearer")
+	trimBearer := strings.TrimPrefix(auth, "Bearer ")
 	res := strings.TrimSpace(trimBearer)
 	return res, nil
 }
