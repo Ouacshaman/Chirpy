@@ -15,16 +15,17 @@ func (cfg *apiConfig) handlerRefresh(w http.ResponseWriter, r *http.Request) {
 	}
 	grt, err := cfg.db.GetRefreshToken(r.Context(),
 		rtk)
-	if err != nil || grt.ExpiresAt == time.Now() {
-		respondWithError(w,
-			401,
-			"Unable to Retrieve UserID", err)
+	if err != nil || grt.ExpiresAt.Before(time.Now()) ||
+		grt.RevokedAt.Valid {
+		respondWithError(w, 401, "Invalid Refresh Token", err)
+		return
 	}
-	nt, err := auth.MakeJWT(grt.UserID, rtk)
+	nt, err := auth.MakeJWT(grt.UserID, cfg.secret)
 	if err != nil {
 		respondWithError(w,
 			http.StatusBadRequest,
 			"Unable to Generate Access Token", err)
+		return
 	}
 	type returnVals struct {
 		Token string `json:"token"`

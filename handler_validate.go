@@ -4,6 +4,7 @@ import (
 	"Chirpy/internal/auth"
 	"Chirpy/internal/database"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 	"time"
@@ -37,11 +38,13 @@ func (cfg *apiConfig) handlerChirps(w http.ResponseWriter, r *http.Request) {
 	}
 	token, err := auth.GetBearerToken(r.Header)
 	if err != nil {
+		fmt.Println("Unable to Bearer Token")
 		respondWithError(w, 401, "Unauthorized", err)
 		return
 	}
 	valUUID, err := auth.ValidateJWT(token, cfg.secret)
 	if err != nil {
+		fmt.Println("Unable to obtain/validate JWT")
 		respondWithError(w, 401, "Unauthorized", err)
 		return
 	}
