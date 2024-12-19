@@ -41,6 +41,39 @@ func (q *Queries) CreateChirp(ctx context.Context, arg CreateChirpParams) (Chirp
 	return i, err
 }
 
+const createToken = `-- name: CreateToken :one
+INSERT INTO refresh_tokens(token, created_at,
+updated_at, user_id, expires_at, revoked_at)
+VALUES(
+    $1,
+    NOW(),
+    NOW(),
+    $2,
+    NOW() + INTERVAL '60day',
+    NULL
+)
+RETURNING token, created_at, updated_at, user_id, expires_at, revoked_at
+`
+
+type CreateTokenParams struct {
+	Token  string
+	UserID uuid.UUID
+}
+
+func (q *Queries) CreateToken(ctx context.Context, arg CreateTokenParams) (RefreshToken, error) {
+	row := q.db.QueryRowContext(ctx, createToken, arg.Token, arg.UserID)
+	var i RefreshToken
+	err := row.Scan(
+		&i.Token,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.UserID,
+		&i.ExpiresAt,
+		&i.RevokedAt,
+	)
+	return i, err
+}
+
 const createUser = `-- name: CreateUser :one
 INSERT INTO users (id, created_at, updated_at, email, hashed_password)
 VALUES (

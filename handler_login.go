@@ -2,9 +2,9 @@ package main
 
 import (
 	"Chirpy/internal/auth"
+	"Chirpy/internal/database"
 	"encoding/json"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -12,9 +12,8 @@ import (
 
 func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 	type paramaters struct {
-		Password         string `json:"password"`
-		Email            string `json:"email"`
-		ExpiresInSeconds int    `json:"expires_in_seconds"`
+		Password string `json:"password"`
+		Email    string `json:"email"`
 	}
 	decoder := json.NewDecoder(r.Body)
 	params := paramaters{}
@@ -33,46 +32,36 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, 401, "Unauthorized", err)
 		return
 	}
-	var token string
-	if params.ExpiresInSeconds == 0 ||
-		params.ExpiresInSeconds > 3600 {
-		hour, err := time.ParseDuration("1h")
-		if err != nil {
-			respondWithError(w, http.StatusBadRequest, "Can't Parse Time", err)
-			return
-		}
-		outcome, err := auth.MakeJWT(user.ID, cfg.secret, hour)
-		if err != nil {
-			respondWithError(w, 401, "Unauthorized", err)
-			return
-		}
-		token = outcome
-	} else {
-		stringSeconds := strconv.Itoa(params.ExpiresInSeconds) + "s"
-		secs, err := time.ParseDuration(stringSeconds)
-		if err != nil {
-			respondWithError(w, http.StatusBadRequest, "Can't Parse Time", err)
-			return
-		}
-		outcome, err := auth.MakeJWT(user.ID, cfg.secret, secs)
-		if err != nil {
-			respondWithError(w, 401, "Unauthorized", err)
-			return
-		}
-		token = outcome
+	token, err := auth.MakeJWT(user.ID, cfg.secret)
+	if err != nil {
+		respondWithError(w, 401, "Unauthorized", err)
+		return
+	}
+	mrt, err := auth.MakeRefreshToken()
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Unable to Generate Refresh Token", err)
+	}
+	rtk, err := cfg.db.CreateToken(r.Context(), database.CreateTokenParams{
+		Token:  mrt,
+		UserID: user.ID,
+	})
+	if err != nil {
+		respondWithError(w, http.StatusBadRequest, "Unable to add token to database", err)
 	}
 	type returnVals struct {
-		Id        uuid.UUID `json:"id"`
-		CreatedAt time.Time `json:"created_at"`
-		UpdatedAt time.Time `json:"updated_at"`
-		Email     string    `json:"email"`
-		Token     string    `json:"token"`
+		Id           uuid.UUID `json:"id"`
+		CreatedAt    time.Time `json:"created_at"`
+		UpdatedAt    time.Time `json:"updated_at"`
+		Email        string    `json:"email"`
+		Token        string    `json:"token"`
+		RefreshToken string    `json:"refresh_token"`
 	}
 	respondWithJSON(w, 200, returnVals{
-		Id:        user.ID,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
-		Email:     user.Email,
-		Token:     token,
+		Id:           user.ID,
+		CreatedAt:    user.CreatedAt,
+		UpdatedAt:    user.UpdatedAt,
+		Email:        user.Email,
+		Token:        token,
+		RefreshToken: rtk.Token,
 	})
 }
