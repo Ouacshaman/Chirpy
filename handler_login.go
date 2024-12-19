@@ -40,6 +40,7 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 	mrt, err := auth.MakeRefreshToken()
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, "Unable to Generate Refresh Token", err)
+		return
 	}
 	rtk, err := cfg.db.CreateToken(r.Context(), database.CreateTokenParams{
 		Token:  mrt,
@@ -47,6 +48,7 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 	})
 	if err != nil {
 		respondWithError(w, http.StatusBadRequest, "Unable to add token to database", err)
+		return
 	}
 	type returnVals struct {
 		Id           uuid.UUID `json:"id"`
