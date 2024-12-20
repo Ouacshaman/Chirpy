@@ -212,3 +212,20 @@ func (q *Queries) RevokeToken(ctx context.Context, token string) error {
 	_, err := q.db.ExecContext(ctx, revokeToken, token)
 	return err
 }
+
+const updateUserEmailPw = `-- name: UpdateUserEmailPw :exec
+UPDATE users
+SET hashed_password = $1, email = $2
+WHERE id = $3
+`
+
+type UpdateUserEmailPwParams struct {
+	HashedPassword string
+	Email          string
+	ID             uuid.UUID
+}
+
+func (q *Queries) UpdateUserEmailPw(ctx context.Context, arg UpdateUserEmailPwParams) error {
+	_, err := q.db.ExecContext(ctx, updateUserEmailPw, arg.HashedPassword, arg.Email, arg.ID)
+	return err
+}
