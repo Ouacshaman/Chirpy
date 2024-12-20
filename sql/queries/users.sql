@@ -61,3 +61,7 @@ WHERE token = $1;
 UPDATE users
 SET hashed_password = $1, email = $2
 WHERE id = $3;
+
+-- name: DeleteChirp :exec
+DELETE FROM chirps
+WHERE id = $1;
