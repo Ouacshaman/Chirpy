@@ -4,7 +4,8 @@ id UUID PRIMARY KEY,
 created_at TIMESTAMP NOT NULL,
 updated_at TIMESTAMP NOT NULL,
 email TEXT UNIQUE NOT NULL,
-hashed_password TEXT DEFAULT 'unset' NOT NULL
+hashed_password TEXT DEFAULT 'unset' NOT NULL,
+is_chirpy_red BOOLEAN DEFAULT FALSE NOT NULL
 );
 
 CREATE TABLE chirps(
