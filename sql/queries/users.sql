@@ -27,13 +27,24 @@ RETURNING *;
 SELECT * FROM chirps
 ORDER BY created_at;
 
+-- name: GetChirpsDesc :many
+SELECT * FROM chirps
+ORDER BY created_at DESC;
+
 -- name: GetChirp :one
 SELECT * FROM chirps
 WHERE chirps.id = $1;
 
 -- name: GetChirpsByUserID :many
 SELECT * FROM chirps
-WHERE chirps.user_id = $1;
+WHERE chirps.user_id = $1
+ORDER BY created_at;
+
+-- name: GetChirpsByUserIDDesc :many
+SELECT * FROM chirps
+WHERE chirps.user_id = $1
+ORDER BY created_at DESC;
+
 
 -- name: GetUser :one
 SELECT * FROM users
